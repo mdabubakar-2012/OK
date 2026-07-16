@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Md. Abu-Bakar // FLUX-TOK Premium App</title>
+    <!-- Tailwind CSS & Google Fonts -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;750&display=swap" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #000000;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+        /* টিকটকের মতো ফুল-স্ক্রিন স্ন্যাপ স্ক্রলিং মেকানিজম */
+        .app-container {
+            height: 100vh;
+            scroll-snap-type: y mandatory;
+            overflow-y: scroll;
+            scrollbar-width: none; /* Firefox */
+        }
+        .app-container::-webkit-scrollbar {
+            display: none; /* Chrome/Safari */
+        }
+        .video-section {
+            height: 100vh;
+            scroll-snap-align: start;
+            position: relative;
+        }
+        .animate-heart {
+            animation: heartPop 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        @keyframes heartPop {
+            0% { transform: scale(0) rotate(-15deg); opacity: 0; }
+            50% { transform: scale(1.4) rotate(10deg); opacity: 1; }
+            100% { transform: scale(1) rotate(0deg); opacity: 0; }
+        }
+    </style>
+</head>
+<body class="text-white">
+
+    <!-- মেইন মোবাইল অ্যাপ রুট কন্টেইনার -->
+    <div id="appRoot" class="app-container w-full max-w-md mx-auto bg-black border-x border-slate-900 shadow-2xl relative">
+        
+        <!-- টপ নেভিগেশন (Following | For You) -->
+        <div class="absolute top-0 inset-x-0 z-40 flex justify-center items-center py-4 bg-gradient-to-b from-black/60 to-transparent space-x-6 text-sm font-bold tracking-wide">
+            <span class="text-white/60 text-xs cursor-pointer">Following</span>
+            <span class="text-white border-b-2 border-red-500 pb-1 text-xs cursor-pointer">For You</span>
+        </div>
+
+        <!-- ডাইনামিক শর্ট ভিডিও ফিড (জাভাস্ক্রিপ্ট এখানে লোড করবে) -->
+        <div id="feedContainer"></div>
+
+        <!-- বটম অ্যাপ বার (Navigation Dock) -->
+        <div class="absolute bottom-0 inset-x-0 z-40 bg-gradient-to-t from-black/90 to-transparent border-t border-white/5 py-3 px-6 flex justify-between items-center text-slate-400">
+            <button class="flex flex-col items-center space-y-0.5 text-white">
+                <i class="fa-solid fa-house text-lg"></i>
+                <span class="text-[9px] font-medium">Home</span>
+            </button>
+            <button class="flex flex-col items-center space-y-0.5 hover:text-white transition">
+                <i class="fa-solid fa-compass text-lg"></i>
+                <span class="text-[9px] font-medium">Discover</span>
+            </button>
+            
+            <!-- টিকটক স্টাইল ক্রিয়েট বাটন -->
+            <button class="relative w-11 h-7 flex items-center justify-center bg-white rounded-lg text-black font-bold mx-2">
+                <div class="absolute -left-1 w-full h-full bg-cyan-400 rounded-lg -z-10"></div>
+                <div class="absolute -right-1 w-full h-full bg-rose-500 rounded-lg -z-20"></div>
+                <i class="fa-solid fa-plus text-xs"></i>
+            </button>
+
+            <button class="flex flex-col items-center space-y-0.5 hover:text-white transition">
+                <i class="fa-solid fa-message text-lg"></i>
+                <span class="text-[9px] font-medium">Inbox</span>
+            </button>
+            <button class="flex flex-col items-center space-y-0.5 hover:text-white transition">
+                <i class="fa-solid fa-user text-lg"></i>
+                <span class="text-[9px] font-medium">Profile</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- অ্যাপ্লিকেশন লজিক ইঞ্জিন -->
+    <script>
+        // টিকটক শর্ট ভিডিও সোর্স ডেটাবেস
+        const shortVideos = [
+            {
+                id: 1,
+                creator: "@abu_bakar_dev",
+                description: "Building the next-gen TikTok application clone with pure Javascript and Tailwind CSS! 🚀 #coding #developer #2026",
+                sound: "Original Sound - Md. Abu-Bakar",
+                likes: "45.2K",
+                comments: "1.2K",
+                shares: "850",
+                videoUrl: "https://assets.mixkit.co/videos/preview/mixkit-neon-light-from-a-tunnel-in-a-futuristic-city-43360-large.mp4"
+            },
+            {
+                id: 2,
+                creator: "@cyber_flux",
+                description: "Futuristic UI/UX design setup animation trend. Rate this from 1-10! 🔥 #uiux #animation #gaming",
+                sound: "Cyber Engine Beats - Flux Sound",
+                likes: "98.7K",
+                comments: "3.4K",
+                shares: "2.1K",
+                videoUrl: "https://assets.mixkit.co/videos/preview/mixkit-abstract-laser-lights-background-42282-large.mp4"
+            }
+        ];
+
+        const feedContainer = document.getElementById('feedContainer');
+
+        // অ্যাপ স্ক্রিনে ভিডিও রেন্ডার করা
+        function renderAppFeed() {
+            feedContainer.innerHTML = '';
+            shortVideos.forEach(video => {
+                const videoEl = document.createElement('div');
+                videoEl.className = "video-section w-full flex items-center justify-center bg-zinc-950";
+                
+                videoEl.innerHTML = `
+                    <!-- আসল মোবাইল ভিডিও ট্যাগ -->
+                    <video id="video-${video.id}" src="${video.videoUrl}" loop muted playsinline class="w-full h-full object-cover" onclick="togglePlayPause(${video.id})"></video>
+                    
+                    <!-- স্ক্রিন ডাবল ক্লিক করলে লাভ অ্যানিমেশন ইফেক্ট এরিয়া -->
+                    <div class="absolute inset-0 flex items-center justify-center pointer-events-none" id="heart-area-${video.id}"></div>
+
+                    <!-- ডান পাশের অ্যাকশন বাটন প্যানেল -->
+                    <div class="absolute right-3 bottom-24 z-30 flex flex-col items-center space-y-5">
+                        <!-- ক্রিয়েটর প্রোফাইল ইমেজ -->
+                        <div class="relative mb-2">
+                            <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-yellow-400 to-rose-500 p-0.5">
+                                <div class="w-full h-full rounded-full bg-black flex items-center justify-center font-bold text-xs text-red-400 border border-black">M</div>
+                            </div>
+                            <div class="absolute -bottom-1 left-3.5 bg-red-500 text-white w-3.5 h-3.5 rounded-full flex items-center justify-center text-[8px]">
+                                <i class="fa-solid fa-plus"></i>
+                            </div>
+                        </div>
+                        
+                        <!-- লাইক বাটন -->
+                        <button onclick="likeVideo(this)" class="flex flex-col items-center group">
+                            <div class="w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white group-hover:text-rose-500 transition text-base">
+                                <i class="fa-solid fa-heart"></i>
+                            </div>
+                            <span class="text-[10px] font-bold tracking-wide mt-1">${video.likes}</span>
+                        </button>
+
+                        <!-- কমেন্ট বাটন -->
+                        <button class="flex flex-col items-center">
+                            <div class="w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white text-base">
+                                <i class="fa-solid fa-comment-dots"></i>
+                            </div>
+                            <span class="text-[10px] font-bold tracking-wide mt-1">${video.comments}</span>
+                        </button>
+
+                        <!-- শেয়ার বাটন -->
+                        <button class="flex flex-col items-center">
+                            <div class="w-10 h-10 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white text-base">
+                                <i class="fa-solid fa-share"></i>
+                            </div>
+                            <span class="text-[10px] font-bold tracking-wide mt-1">${video.shares}</span>
+                        </button>
+                    </div>
+
+                    <!-- নিচের ভিডিও বিবরণী এবং ইনফরমেশন লেয়ার -->
+                    <div class="absolute bottom-16 left-4 right-16 z-30 space-y-2 bg-gradient-to-t from-black/40 to-transparent p-2 rounded-xl">
+                        <h3 class="text-xs font-extrabold tracking-wide text-white">${video.creator}</h3>
+                        <p class="text-[11px] text-slate-200 font-medium leading-relaxed">${video.description}</p>
+                        <div class="flex items-center space-x-2 text-[10px] text-slate-400 font-medium">
+                            <i class="fa-solid fa-music text-[9px] animate-spin text-red-400" style="animation-duration: 4s;"></i>
+                            <marquee class="w-40" scrollamount="3">${video.sound}</marquee>
+                        </div>
+                    </div>
+                `;
+                
+                // ডাবল ক্লিক লিসেনার অ্যাড করা (টিকটকের মতো লাভ পপ-আপ)
+                videoEl.addEventListener('dblclick', (e) => triggerHeartPop(e, video.id));
+                feedContainer.appendChild(videoEl);
+            });
+
+            // প্রথম ভিডিওটি অটো-প্লে করা
+            setTimeout(() => {
+                const firstVideo = document.getElementById('video-1');
+                if(firstVideo) firstVideo.play().catch(e => console.log("Auto-play blocked"));
+            }, 500);
+        }
+
+        // প্লে/পজ লজিক
+        function togglePlayPause(id) {
+            const video = document.getElementById(`video-${id}`);
+            if (video.paused) {
+                video.play();
+            } else {
+                video.pause();
+            }
+        }
+
+        // লাইক বাটন অ্যাকশন
+        function likeVideo(btn) {
+            const heartIcon = btn.querySelector('i');
+            heartIcon.classList.toggle('text-rose-500');
+            heartIcon.classList.toggle('scale-110');
+        }
+
+        // ডাবল ক্লিকে টিকটক স্টাইল লাভ পপ-আপ অ্যানিমেশন
+        function triggerHeartPop(event, id) {
+            const heartArea = document.getElementById(`heart-area-${id}`);
+            const heart = document.createElement('i');
+            heart.className = "fa-solid fa-heart text-red-500 text-6xl absolute animate-heart";
+            
+            // মাউস/আঙুলের পজিশন অনুযায়ী লাভ ক্রিয়েট করা
+            const rect = heartArea.getBoundingClientRect();
+            const x = event.clientX - rect.left;
+            const y = event.clientY - rect.top;
+            
+            heart.style.left = `${x - 30}px`;
+            heart.style.top = `${y - 30}px`;
+            
+            heartArea.appendChild(heart);
+            
+            // অ্যানিমেশন শেষে রিমুভ করা
+            setTimeout(() => heart.remove(), 600);
+        }
+
+        // স্মার্ট স্ক্রলিং লজিক (স্ক্রল করলে আগের ভিডিও পজ হবে, নতুনটা প্লে হবে)
+        document.getElementById('appRoot').addEventListener('scroll', () => {
+            shortVideos.forEach(v => {
+                const videoEl = document.getElementById(`video-${v.id}`);
+                const rect = videoEl.getBoundingClientRect();
+                
+                // ভিডিওটি যদি স্ক্রিনের মাঝে থাকে তাহলে প্লে হবে, না হলে পজ
+                if (rect.top >= 0 && rect.bottom <= window.innerHeight) {
+                    videoEl.play().catch(() => {});
+                } else {
+                    videoEl.pause();
+                }
+            });
+        });
+
+        // অ্যাপ ইনিশিয়ালাইজেশন
+        window.onload = renderAppFeed;
+    </script>
+</body>
+</html>
